@@ -4,6 +4,7 @@ import matplotlib.lines as lines
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+from tqdm import tqdm
 from utils.plots import *
 from utils.fluid_mechanics import *
 from utils.constants import *
@@ -31,9 +32,9 @@ class PoiseuilleFlow:
 
     def parse(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument('-nx', type=int, default=100,
+        parser.add_argument('-nx', type=int, default=300,
                             help='Grid size along X-axis')
-        parser.add_argument('-ny', type=int, default=100,
+        parser.add_argument('-ny', type=int, default=300,
                             help='Grid size along Y-axis')
         parser.add_argument('-o', type=float, default=1.2,
                             help='Omega')
@@ -43,9 +44,9 @@ class PoiseuilleFlow:
                             help='Density at outlet')
         parser.add_argument('-plot_grid', type=int, default=5,
                             help='Number of density plots in one row')
-        parser.add_argument('-nt', type=int, default=10000,
+        parser.add_argument('-nt', type=int, default=100000,
                             help='Number of timesteps')
-        parser.add_argument('-nt_log', type=int, default=1000,
+        parser.add_argument('-nt_log', type=int, default=10000,
                             help='Timestep interval to record/plot values')
         args = parser.parse_args()
         return args
@@ -85,12 +86,11 @@ class PoiseuilleFlow:
             plt.setp(axes, xticks=range(0,self.nx+1,self.nx//5), yticks=range(0,self.ny+1,self.ny//5))
             plt.gcf().set_size_inches(self.subplot_columns*3,subplot_rows*3)
             if self.config_title:
-                plt.suptitle(self.config_title)
+                plt.suptitle(f"Poiseuille Flow - {self.config_title}", wrap=True)
 
-        for i in range(self.nt):
+        for i in tqdm(range(self.nt)):
             f = self.poiseuille_flow(f)
             if i%self.nt_log==0:
-                print(i)
                 rho = get_rho(f[:,1:-1,1:-1])
                 u = get_u(f[:,1:-1,1:-1],rho)
                 idx = math.ceil(i/self.nt_log)
@@ -103,20 +103,25 @@ class PoiseuilleFlow:
                 if plot:
                     axis = axes[math.floor(idx/self.subplot_columns), idx%self.subplot_columns]
 
-                    line_top = lines.Line2D([-0.5, -0.5+self.nx],
-                            [-0.5, -0.5], 
-                            color ='blue')
                     line_bottom = lines.Line2D([-0.5, -0.5+self.nx],
+                            [-0.5, -0.5], 
+                            color ='black',
+                            linewidth=5)
+                    line_top = lines.Line2D([-0.5, -0.5+self.nx],
                             [-0.5+self.ny, -0.5+self.ny],
-                            color ='blue')
+                            color ='black',
+                            linewidth=5)
         
                     plot_density(rho, axis, f"Step {i}", 
                                  [line_top, line_bottom])
                     axis.streamplot(self.X, self.Y, u[0].T, u[1].T,color='white')
 
         if plot:
-            plt.show()
+            plt.show(block=False)
             plt.savefig(f"{self.path}/{self.config_title}/Streamplot.png")
+            plt.clf()
+            plt.cla()
+            plt.close()
         return u_periodic, u_inlet, r_periodic, u_amplitude, r_amplitude
     
     def get_analytical_velocity(self):
@@ -144,6 +149,8 @@ class PoiseuilleFlow:
         
         analytical_u = self.get_analytical_velocity()
         # Combined velocity plot
+        print(analytical_u.shape)
+        print(u_periodic.shape)
         plot_combined(u_periodic,  
                       "Y-coordinate", "Velocity",
                       f"{self.path}/{self.config_title}",
@@ -156,5 +163,6 @@ class PoiseuilleFlow:
                       analytical_u, f"Velocity variation plot (inlet) -  "+self.config_title)
 
 
-swd = PoiseuilleFlow()
-swd.run()
+if __name__ == "__main__":
+    poiseuille = PoiseuilleFlow()
+    poiseuille.run()

@@ -1,3 +1,9 @@
+"""
+Boundary conditions are defined. Stationary and moving boundary conditions are toggled by a boolean parameter.
+
+Moving boundary is implemented only for the top boundary (as other cases were not required). Can be extended for other boundaries too.
+"""
+
 def top_boundary(f, moving=False, ub=0, vb=0):
     f[4,1:-1,-2] = f[2,1:-1,-1]
     f[7,1:-1,-2] = f[5,2:,-1]

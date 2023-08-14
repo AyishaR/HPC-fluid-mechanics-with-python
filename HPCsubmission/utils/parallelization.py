@@ -1,3 +1,7 @@
+"""
+Functions for parallel implementation and execution of the module.
+"""
+
 from mpi4py import MPI
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,7 +12,7 @@ class Parallelization:
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size()
-        
+
         self.allrcoords = None
         self.sectsX, self.sectsY = None, None
         self.nxsub, self.nysub = None, None
@@ -43,29 +47,22 @@ class Parallelization:
         
         recvbuf = np.zeros(c[:,1,:].shape)
 
-        # Send to right which is destination right (dR) and receive from left which is source right (sR)
-        sendbuf = c[:,-2,:].copy() # Send the second last column to dR
-        self.cartcomm.Sendrecv(sendbuf, dR, recvbuf = recvbuf, source = sL)
-        c[:,0,:] = recvbuf # received into the 0th column from sR
+        sendbuf = c[:,-2,:].copy()
+        self.cartcomm.Sendrecv(sendbuf, dR, recvbuf = recvbuf, source = sR)
+        c[:,0,:] = recvbuf 
 
-        # Send to left and receive from right
-        #print(rank,'Left, source',sL,'destination',dL)
         sendbuf = c[:,1,:].copy()
-        self.cartcomm.Sendrecv(sendbuf, dL, recvbuf = recvbuf, source = sR)
+        self.cartcomm.Sendrecv(sendbuf, dL, recvbuf = recvbuf, source = sL)
         c[:,-1,:] = recvbuf
 
         recvbuf = np.zeros(c[:,:,1].shape)
         
-        # Send to up and receive from down
-        #print(rank,'Up, source',sU,'destination',dU)
         sendbuf = c[:,:,1].copy()
-        self.cartcomm.Sendrecv(sendbuf, dU, recvbuf = recvbuf, source = sD)
+        self.cartcomm.Sendrecv(sendbuf, dD, recvbuf = recvbuf, source = sD)
         c[:,:,-1] = recvbuf
 
-        # Send to down and receive from up
-        #print(rank,'Down, source',sD,'destination',dD)
         sendbuf = c[:,:,-2].copy()
-        self.cartcomm.Sendrecv(sendbuf, dD, recvbuf = recvbuf, source = sU)
+        self.cartcomm.Sendrecv(sendbuf, dU, recvbuf = recvbuf, source = sU)
         c[:,:,0]=recvbuf
 
         return c

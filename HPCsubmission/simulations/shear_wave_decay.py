@@ -1,35 +1,71 @@
+import argparse
 import math
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+from tqdm import tqdm
 from utils.plots import *
 from utils.fluid_mechanics import *
 from utils.constants import *
 
 class ShearWaveDecay:
     def __init__(self) -> None:
-        self.omega = 1.2
+        args = self.parse()
 
-        self.rho_o = None
-        self.rho_epsilon = None
-        self.u_epsilon = 0.01
-
-        self.omega_min = 0.1
-        self.omega_max = 1.5
-        self.omega_count = 10
-
-        self.nx = 20
-        self.ny = 20
+        self.nx = args.nx
+        self.ny = args.ny
         self.L = self.ny
         self.X, self.Y = np.meshgrid(np.arange(0,self.nx), np.arange(0,self.ny))
 
-        self.subplot_columns = 5
-        self.nt = 100
-        self.nt_log = 10
+        self.omega = args.o
+
+        self.rho_o = args.rho_o
+        self.rho_epsilon = args.rho_epsilon
+        self.u_epsilon = args.u_epsilon
+
+        self.omega_min = args.omega_min
+        self.omega_max = args.omega_max
+        self.omega_count = args.omega_count
+
+        self.omega_comparison = args.omega_comparison
+        
+        self.subplot_columns = args.plot_grid
+        self.nt = args.nt
+        self.nt_log = args.nt_log
 
         self.config_title = ""
         self.path = f"plots/ShearWaveDecay/{self.config_title}"
 
+    def parse(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-nx', type=int, default=300,
+                            help='Grid size along X-axis')
+        parser.add_argument('-ny', type=int, default=300,
+                            help='Grid size along Y-axis')
+        parser.add_argument('-o', type=float, default=1.2,
+                            help='Omega')
+        parser.add_argument('-u_epsilon', type=float, default=None,
+                            help='Horizontal velocity factor')
+        parser.add_argument('-rho_o', type=float, default=None,
+                            help='Initial density')
+        parser.add_argument('-rho_epsilon', type=float, default=None,
+                            help='Horizontal density factor')
+        parser.add_argument('-omega_min', type=float, default=0.1,
+                            help='Minimum omega for comparison run')
+        parser.add_argument('-omega_max', type=float, default=1.5,
+                            help='Maximum omega for comparison ru')
+        parser.add_argument('-omega_count', type=int, default=15,
+                            help='Number of omega values to pick between minimum and maximum range')
+        parser.add_argument('-plot_grid', type=int, default=5,
+                            help='Number of density plots in one row')
+        parser.add_argument('-nt', type=int, default=10000,
+                            help='Number of timesteps')
+        parser.add_argument('-nt_log', type=int, default=1000,
+                            help='Timestep interval to record/plot values')
+        parser.add_argument("-omega_comparison", action="store_true", help="Enable omega comparison for sinusoidal velocity initiation")
+        args = parser.parse_args()
+        return args
+    
     def shear_wave_decay(self, f_inm):
         # Streaming
         f_inm = stream(f_inm)
@@ -42,7 +78,7 @@ class ShearWaveDecay:
     def simulate_shear_wave_decay(self,
                                   f,
                                   plot=True):
-        slen = math.ceil(self.nt/self.nt_log)
+        slen = math.ceil(self.nt/self.nt_log)+1
         u_periodic = np.empty((slen, self.ny))
         r_periodic = np.empty((slen, self.ny))
         u_amplitude = np.empty((slen))
@@ -51,15 +87,14 @@ class ShearWaveDecay:
         if plot:
             subplot_rows = math.ceil(slen/self.subplot_columns)
             fig, axes = plt.subplots(subplot_rows, self.subplot_columns)
-            plt.setp(axes, xticks=range(0,self.nx+1,5), yticks=range(0,self.ny+1,5))
+            plt.setp(axes, xticks=range(0,self.nx+1,self.nx//5), yticks=range(0,self.ny+1,self.ny//5))
             plt.gcf().set_size_inches(self.subplot_columns*3,subplot_rows*3)
             if self.config_title:
-                plt.suptitle(self.config_title)
+                plt.suptitle(f"Shear Wave Decay - {self.config_title}", wrap=True)
 
-        for i in range(self.nt):
+        for i in tqdm(range(self.nt+1)):
             f = self.shear_wave_decay(f)
             if i%self.nt_log==0:
-                print(i)
                 rho = get_rho(f)
                 u = get_u(f,rho)
                 idx = math.ceil(i/self.nt_log)
@@ -75,44 +110,63 @@ class ShearWaveDecay:
                     axis.streamplot(self.X, self.Y, u[0].T, u[1].T,color='white')
 
         if plot:
+            plt.show(block=False)
             plt.savefig(f"{self.path}/{self.config_title}/Streamplot.png")
+            plt.clf()
+            plt.cla()
+            plt.close()
         return u_periodic, r_periodic, u_amplitude, r_amplitude
     
     def run_multiple_omega(self):
-        # TODO: Move to command line args
         omega_list = np.round(np.linspace(self.omega_min,
                                           self.omega_max,
                                           self.omega_count)[1:],2)
         viscosities = np.zeros((len(omega_list), 3))
 
+        if self.rho_o is not None and self.rho_epsilon is not None:
+            rho_init = self.rho_o + self.rho_epsilon*np.sin((2.*np.pi*self.X)/self.L)
+            self.config_title += \
+            f" Sinusoidal density - rho_o-{self.rho_o};rho_epsilon-{self.rho_epsilon};"
+        else:
+            rho_init = np.ones((self.nx, self.ny))
+
+        if self.u_epsilon is not None:
+            ux = self.u_epsilon*np.sin((2.*np.pi*self.X)/self.L)
+            uy = np.zeros((self.nx, self.ny))
+            u_init = np.stack((ux,uy), axis = 0)
+            self.config_title += f" Sinusoidal velocity - u_epsilon-{self.u_epsilon};"
+        else:
+            u_init = np.zeros((A, self.nx, self.ny))
+
+        f = equilibrium(rho_init, u_init)
 
         for idx, value in enumerate(omega_list):
             print(f"Omega value: {value}")
             self.omega = value
-            rho_init = np.ones((self.nx, self.ny))
-            u_init = np.stack((self.u_epsilon*np.sin((2.*np.pi*self.X)/self.L),
-                            np.zeros((self.nx,self.ny))), 
-                            axis = 0)
-            f = equilibrium(rho_init, u_init)
             _, _, u_amplitude, _ = self.simulate_shear_wave_decay(f, plot=False)
             
             a_0 = u_amplitude[0]
             a_1 = u_amplitude[1]
             k = (2.*np.pi)/self.L
+            print(a_0, a_1)
+            input()
             visc_plot = (np.log(a_0)-np.log(a_1))/(k*k*self.nt_log)
             
             visc_calc = (1/3)*((1/self.omega)-0.5)
             viscosities[idx][:] = self.omega, visc_calc, visc_plot 
 
         viscosities = viscosities.T
-        plt.plot(viscosities[0], viscosities[1], label="Formula")
-        plt.plot(viscosities[0], viscosities[2], label="Simulation plot")
+        plt.plot(viscosities[0], viscosities[1], 'o-', label="Analytical")
+        plt.plot(viscosities[0], viscosities[2], 'o-', label="Simulation plot")
         plt.xlabel("Omega")
         plt.ylabel("Viscosity")
-        plt.title("Comparison of omega - Simulation plot vs Formula")
+        plt.title(f"Comparison of omega - Simulation plot vs Formula -{self.config_title}", wrap=True)
         plt.legend()
-        plt.show()
-        plt.savefig(f"{self.path}/Omega_comparison_{self.omega_min}_{self.omega_max}_{self.omega_count}.png")
+        plt.show(block=False)
+        plt.savefig(f"{self.path}/Omega_comparison_{self.config_title.split('-')[0].strip()}_{self.omega_min}_{self.omega_max}_{self.omega_count}.png")
+        plt.clf()
+        plt.cla()
+        plt.close()
     
     def run(self):
         self.config_title = f"Omega-{self.omega};"
@@ -140,11 +194,32 @@ class ShearWaveDecay:
         self.simulate_shear_wave_decay(f)
 
         # Wave decay
-        plot_decay(r_periodic, "Y-coordinate", "Density", "Density variation plot - "+self.config_title, rho_init[self.nx//2], f"{self.path}/{self.config_title}")
+        plot_decay(r_periodic, "Y-coordinate", "Density", "Density variation plot - "+self.config_title, rho_init[self.nx//2], f"{self.path}/{self.config_title}", nt_log=self.nt_log)
 
         # Amplitude plot
         plot_amplitude(r_amplitude, f"Timestep (in {self.nt_log}) ", "Amplitude of density", "Density amplitude plot - "+self.config_title, f"{self.path}/{self.config_title}")
 
-swd = ShearWaveDecay()
-# swd.run()
-swd.run_multiple_omega()
+        # Combined decay plot
+        plot_combined(r_periodic,
+                      "Y-coordinate", "Density",
+                      f"{self.path}/{self.config_title}",
+                      title=f"Density_combined_plot - {self.config_title}")
+
+        # Wave decay
+        plot_decay(u_periodic, "Y-coordinate", "Velocity", "Velocity variation plot - "+self.config_title, u_init[0,self.nx//2], f"{self.path}/{self.config_title}", nt_log=self.nt_log)
+
+        # Amplitude plot
+        plot_amplitude(u_amplitude, f"Timestep (in {self.nt_log}) ", "Amplitude of velocity", "Velocity amplitude plot - "+self.config_title, f"{self.path}/{self.config_title}")
+
+        # Combined decay plot
+        plot_combined(u_periodic,
+                      "Y-coordinate", "Velocity",
+                      f"{self.path}/{self.config_title}",
+                      title=f"Velocity_combined_plot - {self.config_title}")
+
+if __name__ == "__main__":
+    swd = ShearWaveDecay()
+    if swd.omega_comparison:
+        swd.run_multiple_omega()
+    else:
+        swd.run()

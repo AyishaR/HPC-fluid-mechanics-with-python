@@ -1,3 +1,7 @@
+"""
+Functions for basic fluid mechanics entities such as density, velocity and events such as streaming, collision and others are defined.
+"""
+
 import numpy as np
 from utils.constants import *
 
