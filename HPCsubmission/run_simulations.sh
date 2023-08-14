@@ -24,10 +24,10 @@
 # python3 -m simulations.couette_flow -o 1.2 -u 0.01 -nx 100 -ny 100 -nt 50000 -nt_log 5000
 # echo "Completed\n"
 
-echo "Poiseuille flow simulation..."
-echo "--------------------------------"
-python3 -m simulations.poiseuille_flow -o 1.0 -rho_in 1.001 -rho_out 0.999 -nx 100 -ny 100 -nt 200000
-echo "Completed\n"
+# echo "Poiseuille flow simulation..."
+# echo "--------------------------------"
+# python3 -m simulations.poiseuille_flow -o 1.0 -rho_in 1.001 -rho_out 0.999 -nx 100 -ny 100 -nt 200000
+# echo "Completed\n"
 
 # echo "Sliding Lid simulation (in series)..."
 # echo "--------------------------------"
