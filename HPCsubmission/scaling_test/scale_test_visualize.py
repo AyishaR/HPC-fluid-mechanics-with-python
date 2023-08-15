@@ -2,13 +2,9 @@
 As the runtime is directly related to the dimensions of the lattice grid, the nx and ny values will be varied across different runs.
 """
 import argparse
-import math
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
-from mpi4py import MPI
-from simulations.sliding_lid import SlidingLid as SL_serial
-from simulations.sliding_lid_parallel import SlidingLid as SL_parallel
 from utils.plots import *
 from utils.fluid_mechanics import *
 from utils.constants import *
