@@ -15,7 +15,7 @@ O="1.2"
 U="0.01"
 NT="50000"
 
-TIMELOG_PATH="reports/scale_test_1.csv"
+TIMELOG_PATH="reports/scale_test.csv"
 
 grid_size=(
     100 500 1000

@@ -177,7 +177,6 @@ class ShearWaveDecay:
             if "density" in self.config_title:
                 a_0 = abs(r_amplitude[0]-self.rho_o)
                 a_1 = abs(r_amplitude[1]-self.rho_o)
-                print(a_0, a_1)
                 k = (2.*np.pi)/self.L
                 visc_plot = (np.log(a_0)-np.log(a_1))/(k*k*self.nt_log)
             elif "velocity" in self.config_title:

@@ -36,9 +36,6 @@ class SlidingLid(Parallelization):
         self.re_max = args.re_max
         self.re_count = args.re_count
 
-        self.run_multiple_omega_flag = args.run_multiple_omega
-        self.run_multiple_velocity_flag = args.run_multiple_velocity
-
         self.subplot_columns = args.plot_grid
         self.nt = args.nt
         self.nt_log = args.nt_log
@@ -51,8 +48,7 @@ class SlidingLid(Parallelization):
         self.time_log_path = args.time_log_path
         self.varying_parameter = args.run_multiple
 
-        if self.varying_parameter!="grid":
-            self.grid_division()
+        self.grid_division()
 
         self.config_title = ""
         self.path = f"plots/SlidingLidParallel/{self.config_title}"
@@ -90,8 +86,6 @@ class SlidingLid(Parallelization):
                             help='Path to file to log execution time')
         parser.add_argument("-run_multiple", type=str, default="",
                             help='Parameter to vary while running comparison')
-        parser.add_argument("-run_multiple_velocity", action="store_true", help="Enable Reynolds number comparison for multiple velocity initiation")
-        parser.add_argument("-run_multiple_omega", action="store_true", help="Enable Reynolds number comparison for multiple omega initiation")
         args = parser.parse_args()
         return args
     
@@ -312,15 +306,7 @@ class SlidingLid(Parallelization):
 
 if __name__ == "__main__":
     s_lid = SlidingLid()
-    if s_lid.run_multiple_velocity_flag:
-        execution_time = timeit.timeit(s_lid.run_multiple_velocity, number=1)
-        if s_lid.rank==0:
-            print("Execution time:", execution_time, "seconds")
-    elif s_lid.run_multiple_omega_flag:
-        execution_time = timeit.timeit(s_lid.run_multiple_omega, number=1)
-        if s_lid.rank==0:
-            print("Execution time:", execution_time, "seconds")
-    elif s_lid.varying_parameter:
+    if s_lid.varying_parameter:
         execution_time = timeit.timeit(s_lid.run_multiple_reynolds_number, number=1)
         if s_lid.rank==0:
             print("Execution time:", execution_time, "seconds")

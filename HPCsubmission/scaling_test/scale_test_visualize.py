@@ -68,3 +68,7 @@ class ScaleMPUsVisualize:
             plt.clf()
             plt.cla()
             plt.close()
+
+if __name__ == "__main__":
+    scale_visualize = ScaleMPUsVisualize()
+    scale_visualize.run()   

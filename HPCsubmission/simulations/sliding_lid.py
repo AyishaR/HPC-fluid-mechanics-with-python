@@ -70,8 +70,6 @@ class SlidingLid:
         parser.add_argument("-no_plot", action="store_true", help="Enable plotting")
         parser.add_argument("-time_log_path", type=str, default="",
                             help='Path to file to log execution time')
-        parser.add_argument("-run_multiple_velocity", action="store_true", help="Enable Reynolds number comparison for multiple velocity initiation")
-        parser.add_argument("-run_multiple_omega", action="store_true", help="Enable Reynolds number comparison for multiple omega initiation")
         args = parser.parse_args()
         return args
     
