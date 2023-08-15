@@ -12,6 +12,9 @@ from utils.boundaries import *
 
 class CouetteFlow:
     def __init__(self) -> None:
+        """
+        Initialize the instance variables.
+        """
         args = self.parse()
 
         self.nx = args.nx
@@ -33,6 +36,12 @@ class CouetteFlow:
         self.path = f"plots/CouetteFlow/{self.config_title}"
 
     def parse(self):
+        """
+        Argument parser to parse command line arguments and assign defaults.
+
+        :return: Arguments of the class
+        :rtype: dict
+        """
         parser = argparse.ArgumentParser()
         parser.add_argument('-nx', type=int, default=300,
                             help='Grid size along X-axis')
@@ -52,6 +61,14 @@ class CouetteFlow:
         return args
 
     def couette_flow(self, f_inm):
+        """
+        Simulate one time step of Couette flow.
+
+        :param f_inm: Particle probability density 
+        :type f_inm: np.array
+        :return: Particle probability density after one time step simulation
+        :rtype: np.array
+        """
 
         # Streaming
         f_inm = stream(f_inm)
@@ -65,9 +82,32 @@ class CouetteFlow:
 
         return f_inm
     
+    def get_analytical_velocity(self):
+        """
+        Calculate analytical velocity given init configuration
+
+        :return: Analytical velocity along Y axis
+        :rtype: np.array
+        """
+        h = self.ny
+        analytical_u = np.empty((self.ny))
+        for i in range(self.ny):
+            analytical_u[i] = (i/h)*self.ub
+        return analytical_u
+    
     def simulate_couette_flow(self,
                               f,
                               plot=True):
+        """
+        Simulate couette flow and plot density if applicable.
+
+        :param f: Particle probability density
+        :type f: np.array
+        :param plot: Flag on whether to plot, defaults to True
+        :type plot: bool, optional
+        :return: Values logged at periodic timesteps - u_periodic, r_periodic, u_amplitude, r_amplitude
+        :rtype: np.array, np.array, np.array, np.array
+        """
         slen = math.ceil(self.nt/self.nt_log)
         u_periodic = np.empty((slen, self.ny))
         r_periodic = np.empty((slen, self.ny))
@@ -117,6 +157,9 @@ class CouetteFlow:
         return u_periodic, r_periodic, u_amplitude, r_amplitude
 
     def run(self):
+        """
+        Run Couette flow simulation and plot additional inference plots.
+        """
         self.config_title = f"Omega-{self.omega};ub-{self.ub};vb-{self.vb}"
         os.makedirs(f"{self.path}/{self.config_title}", exist_ok=True)
         
@@ -124,10 +167,12 @@ class CouetteFlow:
         u_periodic, r_periodic, u_amplitude, r_amplitude = \
         self.simulate_couette_flow(f)
 
+        analytical_u = self.get_analytical_velocity()
         # Wave decay
-        plot_decay(u_periodic[::2,1:-1], 
+        plot_decay(u_periodic, 
                    "Y-coordinate", "Velocity",
                    f"Velocity variation plot - y=0:Rigid wall; y={self.ny}:Moving wall with u={self.ub}; "+self.config_title, 
+                   analytical_u,
                    path=f"{self.path}/{self.config_title}",
                    nt_log=self.nt_log)
         
@@ -135,6 +180,7 @@ class CouetteFlow:
         plot_combined(u_periodic,
                       "Y-coordinate", "Velocity",
                       f"{self.path}/{self.config_title}",
+                      analytical_u,
                       title=f"Velocity_combined_plot - {self.config_title}")
 
 if __name__ == "__main__":

@@ -15,6 +15,9 @@ from utils.utils import *
 
 class SlidingLid(Parallelization):
     def __init__(self) -> None:
+        """
+        Initialize the instance variables.
+        """
         super().__init__()
         args = self.parse()
 
@@ -55,6 +58,12 @@ class SlidingLid(Parallelization):
         self.path = f"plots/SlidingLidParallel/{self.config_title}"
 
     def parse(self):
+        """
+        Argument parser to parse command line arguments and assign defaults.
+
+        :return: Arguments of the class
+        :rtype: dict
+        """
         parser = argparse.ArgumentParser()
         parser.add_argument('-nx', type=int, default=300,
                             help='Grid size along X-axis')
@@ -87,7 +96,16 @@ class SlidingLid(Parallelization):
         return args
     
     def sliding_lid(self, f_inm, boundaries=None):
-        
+        """
+        Simulate one time step of Sliding Lid flow.
+
+        :param f_inm: Particle probability density 
+        :type f_inm: np.array
+        :param boundaries: List of boundaries applicable, defaults to None
+        :type boundaries: list or None, optional
+        :return: Particle probability density after one time step simulation
+        :rtype: np.array
+        """
         # Streaming
         f_inm = stream(f_inm)
         
@@ -115,6 +133,16 @@ class SlidingLid(Parallelization):
                               f_all,
                               plot=None):
         
+        """
+        Simulate sliding lid flow and plot density if applicable.
+
+        :param f_all: Particle probability density
+        :type f_all: np.array
+        :param plot: Flag on whether to plot, defaults to True
+        :type plot: bool, optional
+        :return: Particle probability density 
+        :rtype: np.array
+        """
         if plot is None:
             plot = self.plot
         slen = math.ceil(self.nt/self.nt_log)
@@ -206,7 +234,10 @@ class SlidingLid(Parallelization):
         return (r*self.get_nu_from_omega(o))/L
     
     def run_multiple_reynolds_number(self):
-        assert (self.varying_parameter in [GRID, VELOCITY, OMEGA])
+        """
+        Run Sliding Lid simulation for multiple Reynolds number by varying either velocity or omega based on the configuration of the object. Plot the final probability density for each simulation in a combination subplot diagram.
+        """
+        assert (self.varying_parameter in [VELOCITY, OMEGA])
         os.makedirs(f"{self.path}/Varying_{self.varying_parameter}", exist_ok=True)
 
         re_list = np.round(np.linspace(self.re_min, self.re_max, self.re_count),2)
@@ -219,16 +250,7 @@ class SlidingLid(Parallelization):
             plt.gcf().set_size_inches(self.subplot_columns*3,subplot_rows*3)
 
         for idx, value in enumerate(re_list):
-            if self.varying_parameter == GRID:
-                L = int(self.get_L(value, self.ub, self.omega))
-                self.nx = self.ny = self.L = L
-                self.X, self.Y = np.meshgrid(np.arange(0,self.nx), np.arange(0,self.ny))
-                self.grid_division()
-
-                subplot_title = f"Re: {value} (L- {self.L})"
-                self.config_title = f"Reynolds number comparison with varying grid size (\u03A9- {self.omega}; u- {self.ub})"
-
-            elif self.varying_parameter == OMEGA:
+            if self.varying_parameter == OMEGA:
                 self.omega = np.round(self.get_o(value, self.L, self.ub),2)
 
                 subplot_title = f"Re- {value} (\u03A9: {self.omega})"
@@ -239,7 +261,8 @@ class SlidingLid(Parallelization):
 
                 subplot_title = f"Re- {value} (u- {self.ub})"
                 self.config_title = f"Reynolds number comparison with varying velocity (L- {self.L}; \u03A9- {self.omega})"
-   
+                
+            print(f"Simulating {subplot_title}")
             f = np.einsum("i,jk->ijk", W_I, np.ones((self.nx,self.ny)))
 
             f = self.simulate_sliding_lid(f, plot=False)
@@ -271,6 +294,9 @@ class SlidingLid(Parallelization):
         plt.close()
 
     def run(self):
+        """
+        Run Sliding Lid flow simulation and plot additional inference plots.
+        """
         self.config_title = f"Omega-{self.omega};u-{self.ub};"
         os.makedirs(f"{self.path}/{self.config_title}", exist_ok=True)
         
@@ -281,7 +307,7 @@ class SlidingLid(Parallelization):
         end_time = time.time()
 
         if self.rank==0 and self.time_log_path:
-            write_time_to_file(self.time_log_path, self.size, self.nx, self.nt, round(end_time-start_time, 2), PARALLEL)
+            write_time_to_file(self.time_log_path, self.size, self.nx, self.nt, round(end_time-start_time, 2))
 
 
 if __name__ == "__main__":

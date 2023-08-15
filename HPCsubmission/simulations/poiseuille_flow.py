@@ -12,6 +12,9 @@ from utils.boundaries import *
 
 class PoiseuilleFlow:
     def __init__(self) -> None:
+        """
+        Initialize the instance variables.
+        """
         args = self.parse()
 
         self.nx = args.nx
@@ -31,6 +34,12 @@ class PoiseuilleFlow:
         self.path = f"plots/PoiseuilleFlow/{self.config_title}"
 
     def parse(self):
+        """
+        Argument parser to parse command line arguments and assign defaults.
+
+        :return: Arguments of the class
+        :rtype: dict
+        """
         parser = argparse.ArgumentParser()
         parser.add_argument('-nx', type=int, default=300,
                             help='Grid size along X-axis')
@@ -52,7 +61,14 @@ class PoiseuilleFlow:
         return args
     
     def poiseuille_flow(self, f_inm):
+        """
+        Simulate one time step of Poiseuille flow.
 
+        :param f_inm: Particle probability density 
+        :type f_inm: np.array
+        :return: Particle probability density after one time step simulation
+        :rtype: np.array
+        """
         # Pressure gradient
         f_inm = set_pressure_gradient(f_inm, self.ny,
                                       self.rho_in_value, 
@@ -73,6 +89,16 @@ class PoiseuilleFlow:
     def simulate_poiseuille_flow(self,
                               f,
                               plot=True):
+        """
+        Simulate Poiseuille flow and plot density if applicable.
+
+        :param f: Particle probability density
+        :type f: np.array
+        :param plot: Flag on whether to plot, defaults to True
+        :type plot: bool, optional
+        :return: Values logged at periodic timesteps - u_periodic, r_periodic, u_amplitude, r_amplitude
+        :rtype: np.array, np.array, np.array, np.array
+        """
         slen = math.ceil(self.nt/self.nt_log)
         u_periodic = np.empty((slen, self.ny))
         u_inlet = np.empty((slen, self.ny))
@@ -125,15 +151,24 @@ class PoiseuilleFlow:
         return u_periodic, u_inlet, r_periodic, u_amplitude, r_amplitude
     
     def get_analytical_velocity(self):
+        """
+        Calculate analytical velocity given init configuration
+
+        :return: Analytical velocity along Y axis
+        :rtype: np.array
+        """
         delta_p = (self.rho_out_value - self.rho_in_value)/(3*self.nx)
         nu = (1/3)*((1/self.omega)-0.5)
         h = self.ny
         analytical_u = np.empty((self.ny))
-        for i in range(self.nx):
+        for i in range(self.ny):
             analytical_u[i] = -(0.5/nu)*delta_p*i*(h-i)
         return analytical_u
 
     def run(self):
+        """
+        Run Poiseuille flow simulation and plot additional inference plots.
+        """
         self.config_title = f"Omega-{self.omega};rho_in-{self.rho_in_value};rho_out-{self.rho_out_value};"
         os.makedirs(f"{self.path}/{self.config_title}", exist_ok=True)
         
@@ -149,8 +184,6 @@ class PoiseuilleFlow:
         
         analytical_u = self.get_analytical_velocity()
         # Combined velocity plot
-        print(analytical_u.shape)
-        print(u_periodic.shape)
         plot_combined(u_periodic,  
                       "Y-coordinate", "Velocity",
                       f"{self.path}/{self.config_title}",

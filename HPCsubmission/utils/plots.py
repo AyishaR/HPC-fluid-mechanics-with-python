@@ -10,7 +10,18 @@ import numpy as np
 
 
 def plot_density(arr, axis, title=None, boundaries=None):
-    
+    """
+    Plot the particle probability density consolidated among channels in 2D.
+
+    :param arr: 2D particle probability density
+    :type arr: np.array
+    :param axis: Axis to plot on
+    :type axis: matplotlib.Axis
+    :param title: Title of the plot, defaults to None
+    :type title: str or None, optional
+    :param boundaries: List of boundary lines to plot, defaults to None
+    :type boundaries: list or None, optional
+    """
     if title is not None:
         axis.set_title(title, wrap=True)
         
@@ -25,6 +36,24 @@ def plot_density(arr, axis, title=None, boundaries=None):
     axis.invert_yaxis()
     
 def plot_decay(arr, label_x, label_y, title=None, init_arc=None, path=None, nt_log=1):
+    """
+    Plot parameter decay as a collection of subplots. Each row of arr is a separate subplot. If init_arc is specified, it is the first plot in the subplotgrid with reference title as "Initial value plot". If path is given, save figure.
+
+    :param arr: List of parameter values indicating change/decay over timesteps
+    :type arr: np.array
+    :param label_x: Label of X axis
+    :type label_x: str
+    :param label_y: Label of Y axis
+    :type label_y: str
+    :param title: Title of plot, defaults to None
+    :type title: str, optional
+    :param init_arc: Initial parameter values before simulation, defaults to None
+    :type init_arc: np.array, optional
+    :param path: Path to save figure, defaults to None
+    :type path: str, optional
+    :param nt_log: Time step difference between each value log, defaults to 1
+    :type nt_log: int, optional
+    """
     if init_arc is not None:
         arr = np.insert(arr, 0, init_arc, axis=0)
         
@@ -59,6 +88,20 @@ def plot_decay(arr, label_x, label_y, title=None, init_arc=None, path=None, nt_l
         plt.close()
             
 def plot_amplitude(arr, label_x, label_y, title=None, path=None):
+    """
+    Plot amplitude arr in a plot. If path is given, save figure.
+
+    :param arr: List of parameter values indicating change/decay over timesteps
+    :type arr: np.array
+    :param label_x: Label of X axis
+    :type label_x: str
+    :param label_y: Label of Y axis
+    :type label_y: str
+    :param title: Title of plot, defaults to None
+    :type title: str, optional
+    :param path: Path to save figure, defaults to None
+    :type path: str, optional
+    """
     plt.plot(arr)
     plt.xlabel(label_x)
     plt.ylabel(label_y)
@@ -76,12 +119,27 @@ def plot_combined(periodic_data,
                   label_x, label_y, path,
                   reference=None, 
                   title=None):
+    """
+    Plot parameter decay as a multiple lines in a single plot. If 'reference' is specified, it is labelled as "Analytical". If path is given, save figure.
+
+    :param arr: List of parameter values indicating change/decay over timesteps
+    :type arr: np.array
+    :param label_x: Label of X axis
+    :type label_x: str
+    :param label_y: Label of Y axis
+    :type label_y: str
+    :param path: Path to save figure, defaults to None
+    :type path: str, optional
+    :param reference: Reference values to plot, defaults to None
+    :type reference: np.array, optional
+    :param title: Title of plot, defaults to None
+    :type title: str, optional
+    """
+    for i in range(periodic_data.shape[0]):
+        plt.plot(periodic_data[i])
     if reference is not None:
         plt.plot(reference, color='black', label="Analytical")
         plt.legend()
-
-    for i in range(periodic_data.shape[0]):
-        plt.plot(periodic_data[i])
     plt.xlabel(label_x)
     plt.ylabel(label_y)
     if title:

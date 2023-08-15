@@ -10,6 +10,9 @@ from utils.constants import *
 
 class ShearWaveDecay:
     def __init__(self) -> None:
+        """
+        Initialize the instance variables.
+        """
         args = self.parse()
 
         self.nx = args.nx
@@ -34,9 +37,15 @@ class ShearWaveDecay:
         self.nt_log = args.nt_log
 
         self.config_title = ""
-        self.path = f"plots/ShearWaveDecay/{self.config_title}"
+        self.path = f"plots/ShearWaveDecay"
 
     def parse(self):
+        """
+        Argument parser to parse command line arguments and assign defaults.
+
+        :return: Arguments of the class
+        :rtype: dict
+        """
         parser = argparse.ArgumentParser()
         parser.add_argument('-nx', type=int, default=300,
                             help='Grid size along X-axis')
@@ -67,6 +76,14 @@ class ShearWaveDecay:
         return args
     
     def shear_wave_decay(self, f_inm):
+        """
+        Simulate one time step of Shear Wave Decay.
+
+        :param f_inm: Particle probability density 
+        :type f_inm: np.array
+        :return: Particle probability density after one time step simulation
+        :rtype: np.array
+        """
         # Streaming
         f_inm = stream(f_inm)
         
@@ -78,6 +95,16 @@ class ShearWaveDecay:
     def simulate_shear_wave_decay(self,
                                   f,
                                   plot=True):
+        """
+        Simulate shear wave decay and plot density if applicable.
+
+        :param f: Particle probability density
+        :type f: np.array
+        :param plot: Flag on whether to plot, defaults to True
+        :type plot: bool, optional
+        :return: Values logged at periodic timesteps - u_periodic, r_periodic, u_amplitude, r_amplitude
+        :rtype: np.array, np.array, np.array, np.array
+        """
         slen = math.ceil(self.nt/self.nt_log)+1
         u_periodic = np.empty((slen, self.ny))
         r_periodic = np.empty((slen, self.ny))
@@ -118,9 +145,12 @@ class ShearWaveDecay:
         return u_periodic, r_periodic, u_amplitude, r_amplitude
     
     def run_multiple_omega(self):
+        """
+        Run Shear Wave Decay for multiple omega values and plot comparison plots.
+        """
         omega_list = np.round(np.linspace(self.omega_min,
                                           self.omega_max,
-                                          self.omega_count)[1:],2)
+                                          self.omega_count),2)
         viscosities = np.zeros((len(omega_list), 3))
 
         if self.rho_o is not None and self.rho_epsilon is not None:
@@ -143,14 +173,18 @@ class ShearWaveDecay:
         for idx, value in enumerate(omega_list):
             print(f"Omega value: {value}")
             self.omega = value
-            _, _, u_amplitude, _ = self.simulate_shear_wave_decay(f, plot=False)
-            
-            a_0 = u_amplitude[0]
-            a_1 = u_amplitude[1]
-            k = (2.*np.pi)/self.L
-            print(a_0, a_1)
-            input()
-            visc_plot = (np.log(a_0)-np.log(a_1))/(k*k*self.nt_log)
+            _, _, u_amplitude, r_amplitude = self.simulate_shear_wave_decay(f, plot=False)
+            if "density" in self.config_title:
+                a_0 = abs(r_amplitude[0]-self.rho_o)
+                a_1 = abs(r_amplitude[1]-self.rho_o)
+                print(a_0, a_1)
+                k = (2.*np.pi)/self.L
+                visc_plot = (np.log(a_0)-np.log(a_1))/(k*k*self.nt_log)
+            elif "velocity" in self.config_title:
+                a_0 = u_amplitude[0]
+                a_1 = u_amplitude[1]
+                k = (2.*np.pi)/self.L
+                visc_plot = (np.log(a_0)-np.log(a_1))/(k*k*self.nt_log)
             
             visc_calc = (1/3)*((1/self.omega)-0.5)
             viscosities[idx][:] = self.omega, visc_calc, visc_plot 
@@ -163,12 +197,16 @@ class ShearWaveDecay:
         plt.title(f"Comparison of omega - Simulation plot vs Formula -{self.config_title}", wrap=True)
         plt.legend()
         plt.show(block=False)
+        os.makedirs(f"{self.path}", exist_ok=True)
         plt.savefig(f"{self.path}/Omega_comparison_{self.config_title.split('-')[0].strip()}_{self.omega_min}_{self.omega_max}_{self.omega_count}.png")
         plt.clf()
         plt.cla()
         plt.close()
     
     def run(self):
+        """
+        Run Shear Wave Decay simulation and plot additional inference plots.
+        """
         self.config_title = f"Omega-{self.omega};"
 
         if self.rho_o is not None and self.rho_epsilon is not None:

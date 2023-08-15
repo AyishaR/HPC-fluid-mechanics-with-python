@@ -1,5 +1,4 @@
-"""Simulate the Sliding Lid for the same set of parameters in serial and parallel and compare runtimes.
-As the runtime is directly related to the dimensions of the lattice grid, the nx and ny values will be varied across different runs.
+"""Plot results of scale test from CSV file.
 """
 import argparse
 import matplotlib.pyplot as plt
@@ -10,8 +9,14 @@ from utils.fluid_mechanics import *
 from utils.constants import *
 from utils.boundaries import *
 
-class ScaleMPUs:
+class ScaleMPUsVisualize:
+    """
+    Class to plot results of the scale test from a CSV file that has run time, processor counts and other parameters.
+    """
     def __init__(self) -> None:
+        """
+        Initialize instance variables.
+        """
         args = self.parse()
 
         self.time_log_path = args.time_log_path
@@ -19,12 +24,18 @@ class ScaleMPUs:
         self.config_title = args.config_title
 
     def parse(self):
+        """
+        Argument parser to parse command line arguments and assign defaults.
+
+        :return: Arguments of the class
+        :rtype: dict
+        """
         parser = argparse.ArgumentParser()
         parser.add_argument('-time_log_path', type=str, 
                             default="reports/report.csv",
                             help='Path to report with comparison of time of execution')
         parser.add_argument('-plot_path', type=str, 
-                            default="plots/Scale_mpus",
+                            default="plots/Scale_cores_mpus",
                             help='Path to save plot with comparison of time of execution')
         parser.add_argument('-config_title', type=str, 
                             default="",
@@ -33,12 +44,14 @@ class ScaleMPUs:
         return args
     
     def run(self):
-        print("Running", self.time_log_path, ";")
+        """
+        Plot the results of scale test. Calculate MLUPS and plot against number of cores for different grid sizes. The plot is a log plot.
+        """
         if os.path.exists(self.time_log_path):
             os.makedirs(f"{self.plot_path}", exist_ok=True)
             df = pd.read_csv(self.time_log_path)
             df = df.sort_values(by=['Grid','Cores'], ascending=True)
-            df['MLUPS'] = df.apply(lambda x: round((x['Timestep']*x['Grid']*x['Grid'])/(x[PARALLEL]*1000000),2), axis=1)
+            df['MLUPS'] = df.apply(lambda x: round((x['Timestep']*x['Grid']*x['Grid'])/(x["Time"]*1000000),2), axis=1)
             # df['proc_log10'] = df.apply(lambda x: round(np.)
             unique_grids = df['Grid'].unique()
             for grid_value in unique_grids:
@@ -46,18 +59,12 @@ class ScaleMPUs:
                          df[df['Grid']==grid_value]['MLUPS'].tolist(), 
                          marker='o', linestyle='-', 
                          label=f'Grid {grid_value}x{grid_value}')
-            # plt.axis("equal")
-            plt.xlabel('Number of cores')
-            plt.ylabel('Parallel Execution Time (seconds)')
-            plt.title(f'Comparison of execution time with respect to number of cores - {self.config_title}', size=10, wrap=True)
+            plt.xlabel('Number of processors')
+            plt.ylabel('MLUPS')
+            plt.title(f'MLUPS vs number of processors - {self.config_title}', size=10, wrap=True)
             plt.legend()
-
-            plt.show(block=True)
-            plt.savefig(f"{self.plot_path}/Plot.png")
+            plt.show(block=False)
+            plt.savefig(f"{self.plot_path}/Plot_MLUPS.png")
             plt.clf()
             plt.cla()
             plt.close()
-
-if __name__ == "__main__":
-    sp = ScaleMPUs()
-    sp.run()

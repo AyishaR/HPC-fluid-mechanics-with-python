@@ -15,6 +15,9 @@ from utils.utils import *
 
 class SlidingLid:
     def __init__(self) -> None:
+        """
+        Initialize the instance variables.
+        """
         args = self.parse()
 
         self.nx = args.nx
@@ -43,6 +46,12 @@ class SlidingLid:
         self.path = f"plots/SlidingLid/{self.config_title}"
 
     def parse(self):
+        """
+        Argument parser to parse command line arguments and assign defaults.
+
+        :return: Arguments of the class
+        :rtype: dict
+        """
         parser = argparse.ArgumentParser()
         parser.add_argument('-nx', type=int, default=300,
                             help='Grid size along X-axis')
@@ -67,6 +76,14 @@ class SlidingLid:
         return args
     
     def sliding_lid(self, f_inm):
+        """
+        Simulate one time step of Sliding Lid flow.
+
+        :param f_inm: Particle probability density 
+        :type f_inm: np.array
+        :return: Particle probability density after one time step simulation
+        :rtype: np.array
+        """
         
         # Streaming
         f_inm = stream(f_inm)
@@ -85,6 +102,16 @@ class SlidingLid:
     def simulate_sliding_lid(self,
                               f,
                               plot=None):
+        """
+        Simulate sliding lid flow and plot density if applicable.
+
+        :param f: Particle probability density
+        :type f: np.array
+        :param plot: Flag on whether to plot, defaults to True
+        :type plot: bool, optional
+        :return: Values logged at periodic timesteps and final particle density - u_periodic, r_periodic, u_amplitude, r_amplitude, f
+        :rtype: np.array, np.array, np.array, np.array, np.array
+        """
         if plot is None:
             plot = self.plot
         slen = math.ceil(self.nt/self.nt_log)
@@ -137,6 +164,9 @@ class SlidingLid:
         return u_periodic, r_periodic, u_amplitude, r_amplitude, f
     
     def run(self):
+        """
+        Run Sliding Lid flow simulation and plot additional inference plots.
+        """
         self.config_title = f"Omega-{self.omega};u-{self.ub};"
         os.makedirs(f"{self.path}/{self.config_title}", exist_ok=True)
         
@@ -148,7 +178,7 @@ class SlidingLid:
         end_time = time.time()
 
         if self.time_log_path:
-            write_time_to_file(self.time_log_path, 1, self.nx, round(end_time-start_time, 2), SERIAL)
+            write_time_to_file(self.time_log_path, 1, self.nx, round(end_time-start_time, 2))
 
 
 if __name__ == "__main__":

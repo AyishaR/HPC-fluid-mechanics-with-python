@@ -8,7 +8,13 @@ import numpy as np
 from utils.constants import *
 
 class Parallelization:
+    """
+    Base class to handle parallel implementation and execution of the simulation.
+    """
     def __init__(self):
+        """
+        Initialize the parallelization object.
+        """
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size()
@@ -21,6 +27,9 @@ class Parallelization:
         self.nx, self.ny = None, None
 
     def grid_division(self):
+        """
+        Divide the lattice grid into sub-domains and assign sizes, coordinates and communication indices for each sub-domain.
+        """
 
         self.sectsX=int(np.floor(np.sqrt(self.size)))
         self.sectsY=int(self.size//self.sectsX)
@@ -43,6 +52,14 @@ class Parallelization:
 
     # Communication between subdomains
     def communicate(self, c):
+        """
+        Communicate with adjacent sub-domains and exchange data in buffers,
+
+        :param c: Array with buffers that needs to exchange data.
+        :type c: np.array
+        :return: Array updated after data exchange
+        :rtype: np.array
+        """
         sR,dR,sL,dL,sU,dU,sD,dD = self.sd
         
         recvbuf = np.zeros(c[:,1,:].shape)
@@ -68,6 +85,14 @@ class Parallelization:
         return c
 
     def get_coordinates_of_rank(self, r=None):
+        """
+        Get coordinates of the sub-domain assigned to the rank. If no rank is specified, get the coordinates of current rank.
+
+        :param r: Rank, defaults to None
+        :type r: int or None, optional
+        :return: Coordinates of the sub-domain assigned to the rank - (xlo,    xhi, ylo, yhi)
+        :rtype: _type_
+        """
         if r:
             rc = self.allrcoords[r]
         else:
@@ -81,6 +106,12 @@ class Parallelization:
         return xlo, xhi, ylo, yhi
     
     def get_boundaries(self):
+        """
+        Get boundaries of the lattice grid that are applicable to the grid of the sub-domain.
+
+        :return: List of constants indicating the boundaries of the grid of the sub-domain.
+        :rtype: list of str
+        """
         b = []
         if self.rcoords[0]==0: 
             b.append(LEFT)
