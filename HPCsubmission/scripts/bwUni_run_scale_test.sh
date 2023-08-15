@@ -1,12 +1,12 @@
-#!/bin/bash
-#SBATCH --nodes=3
-#SBATCH --ntasks-per-node=40
-#SBATCH --mem=90000
-#SBATCH --time=00:30:00
-#SBATCH --partition=dev_multiple
-#SBATCH --output=run_scale_test.out
-#SBATCH --error=run_scale_test.err
-#SBATCH --export=ALL
+# #!/bin/bash
+# #SBATCH --nodes=3
+# #SBATCH --ntasks-per-node=40
+# #SBATCH --mem=90000
+# #SBATCH --time=00:30:00
+# #SBATCH --partition=dev_multiple
+# #SBATCH --output=run_scale_test.out
+# #SBATCH --error=run_scale_test.err
+# #SBATCH --export=ALL
 
 module load compiler/gnu/10.2   
 module load mpi/openmpi/4.1
@@ -14,7 +14,7 @@ module load devel/python/3.8.6_gnu_10.2
 
 O="1.2"
 U="0.01"
-NT="50"
+NT="50000"
 
 TIMELOG_PATH="reports/scale_test.csv"
 
@@ -22,7 +22,7 @@ grid_size=(
     100 500 1000
 )
 cores=(
-    16 25 100
+    16 25 100 400 625 2500
 )
 
 for grid_val in "${grid_size[@]}"; do
