@@ -37,19 +37,26 @@ class ScaleMPUs:
         return args
     
     def run(self):
+        print("Running", self.time_log_path, ";")
         if os.path.exists(self.time_log_path):
             os.makedirs(f"{self.plot_path}", exist_ok=True)
             df = pd.read_csv(self.time_log_path)
-            df = df.sort_values(by='Cores', ascending=True)
-            plt.plot(df['Cores'].tolist(), df[PARALLEL].tolist(), 
-                     marker='o', linestyle='-')
+            df = df.sort_values(by=['Grid','Cores'], ascending=True)
+            df['MLUPS'] = df.apply(lambda x: round((x['Timestep']*x['Grid']*x['Grid'])/(x[PARALLEL]*1000000),2), axis=1)
+            # df['proc_log10'] = df.apply(lambda x: round(np.)
+            unique_grids = df['Grid'].unique()
+            for grid_value in unique_grids:
+                plt.loglog(df[df['Grid']==grid_value]['Cores'].tolist(), 
+                         df[df['Grid']==grid_value]['MLUPS'].tolist(), 
+                         marker='o', linestyle='-', 
+                         label=f'Grid {grid_value}x{grid_value}')
             # plt.axis("equal")
             plt.xlabel('Number of cores')
             plt.ylabel('Parallel Execution Time (seconds)')
             plt.title(f'Comparison of execution time with respect to number of cores - {self.config_title}', size=10, wrap=True)
+            plt.legend()
 
-            # df.apply(lambda x: plt.annotate(f"{int(x['Grid'])}x{int(x['Grid'])}", (x['Cores'], x[PARALLEL]), textcoords="offset points", xytext=(0,10), ha='center'), axis=1)
-            plt.show(block=False)
+            plt.show(block=True)
             plt.savefig(f"{self.plot_path}/Plot.png")
             plt.clf()
             plt.cla()

@@ -232,13 +232,13 @@ class SlidingLid(Parallelization):
                 self.omega = np.round(self.get_o(value, self.L, self.ub),2)
 
                 subplot_title = f"Re- {value} (\u03A9: {self.omega})"
-                self.config_title = f"Reynolds number comparison with varying grid size (L- {self.L}; u- {self.ub})"
+                self.config_title = f"Reynolds number comparison with varying omega (L- {self.L}; u- {self.ub})"
 
             elif self.varying_parameter == VELOCITY:
                 self.ub = np.round(self.get_u(value, self.L, self.omega),2)
 
                 subplot_title = f"Re- {value} (u- {self.ub})"
-                self.config_title = f"Reynolds number comparison with varying grid size (L- {self.L}; \u03A9- {self.omega})"
+                self.config_title = f"Reynolds number comparison with varying velocity (L- {self.L}; \u03A9- {self.omega})"
    
             f = np.einsum("i,jk->ijk", W_I, np.ones((self.nx,self.ny)))
 
@@ -265,7 +265,7 @@ class SlidingLid(Parallelization):
                 axis.streamplot(self.X, self.Y, u[0].T, u[1].T, color='white')
         plt.suptitle(self.config_title)
         plt.show(block=False)
-        plt.savefig(f"{self.path}Varying_{self.varying_parameter}/{self.config_title}.png")
+        plt.savefig(f"{self.path}/Varying_{self.varying_parameter}/{self.config_title}.png")
         plt.clf()
         plt.cla()
         plt.close()
@@ -281,20 +281,24 @@ class SlidingLid(Parallelization):
         end_time = time.time()
 
         if self.rank==0 and self.time_log_path:
-            write_time_to_file(self.time_log_path, self.size, self.nx, round(end_time-start_time, 2), PARALLEL)
+            write_time_to_file(self.time_log_path, self.size, self.nx, self.nt, round(end_time-start_time, 2), PARALLEL)
 
 
 if __name__ == "__main__":
     s_lid = SlidingLid()
     if s_lid.run_multiple_velocity_flag:
         execution_time = timeit.timeit(s_lid.run_multiple_velocity, number=1)
-        print("Execution time:", execution_time, "seconds")
+        if s_lid.rank==0:
+            print("Execution time:", execution_time, "seconds")
     elif s_lid.run_multiple_omega_flag:
         execution_time = timeit.timeit(s_lid.run_multiple_omega, number=1)
-        print("Execution time:", execution_time, "seconds")
+        if s_lid.rank==0:
+            print("Execution time:", execution_time, "seconds")
     elif s_lid.varying_parameter:
         execution_time = timeit.timeit(s_lid.run_multiple_reynolds_number, number=1)
-        print("Execution time:", execution_time, "seconds")
+        if s_lid.rank==0:
+            print("Execution time:", execution_time, "seconds")
     else:
         execution_time = timeit.timeit(s_lid.run, number=1)
-        print("Execution time:", execution_time, "seconds")
+        if s_lid.rank==0:
+            print("Execution time:", execution_time, "seconds")
